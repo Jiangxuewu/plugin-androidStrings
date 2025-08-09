@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.geminicli.exportandroidstrings</id>
     <name>Export Android Strings</name>
-    <version>1.0</version>
+    <version>1.0.0.001</version>
     <vendor email="support@geminicli.com" url="https://www.geminicli.com">Gemini-cli</vendor>
 
     <description><![CDATA[
