@@ -109,7 +109,7 @@ public class ExportStringsAction extends AnAction {
         gbc.gridwidth = 3;
         gbc.anchor = GridBagConstraints.EAST;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton exportButton = new JButton("Export");
+        JButton exportButton = new JButton("Export All Strings");
         buttonPanel.add(exportButton);
         panel.add(buttonPanel, gbc);
 
