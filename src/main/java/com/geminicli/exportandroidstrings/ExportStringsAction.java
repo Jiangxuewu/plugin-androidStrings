@@ -4,12 +4,22 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
+import com.intellij.psi.xml.XmlFile;
+import com.intellij.psi.xml.XmlTag;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExportStringsAction extends AnAction {
 
@@ -69,11 +79,35 @@ public class ExportStringsAction extends AnAction {
                     Messages.showErrorDialog(project, "Please select an export directory.", "Error");
                     return;
                 }
-                Messages.showMessageDialog(project, "Exporting strings to: " + exportPath, "Export Strings", Messages.getInformationIcon());
-                dialog.dispose(); // Close the dialog after export (for now)
+                
+                // Call the export logic
+                exportStrings(project, exportPath);
+                dialog.dispose(); // Close the dialog after export
             }
         });
 
         dialog.setVisible(true);
+    }
+
+    private void exportStrings(@NotNull Project project, @NotNull String exportPath) {
+        Messages.showMessageDialog(project, "Starting string export to: " + exportPath, "Export Strings", Messages.getInformationIcon());
+
+        // Placeholder for actual string extraction and export logic
+        // In a real scenario, you would:
+        // 1. Find all res/values-XX/strings.xml files in the project.
+        // 2. Parse each strings.xml file to extract string key-value pairs.
+        // 3. Consolidate the strings, handling different languages.
+        // 4. Write the consolidated data to a file (e.g., CSV, Excel) at exportPath.
+
+        // For now, let's just create a dummy file to show it's working
+        File outputFile = new File(exportPath, "exported_strings.csv");
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            writer.append("key,default_en,es,fr\n");
+            writer.append("app_name,My App,Mi Aplicación,Mon Application\n");
+            writer.append("hello_world,Hello World,Hola Mundo,Bonjour le monde\n");
+            Messages.showMessageDialog(project, "Dummy strings exported to: " + outputFile.getAbsolutePath(), "Export Strings", Messages.getInformationIcon());
+        } catch (IOException e) {
+            Messages.showErrorDialog(project, "Error writing dummy file: " + e.getMessage(), "Export Error", Messages.getErrorIcon());
+        }
     }
 }

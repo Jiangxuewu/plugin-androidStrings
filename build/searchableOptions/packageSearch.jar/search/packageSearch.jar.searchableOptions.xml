@@ -1,0 +1,50 @@
+<options>
+  <configurable id="preferences.keymap" configurable_name="Keymap">
+    <option name="add" path="ActionManager" hit="Add Package…" />
+    <option name="package" path="ActionManager" hit="Add Package…" />
+    <option name="add" path="ActionManager" hit="Add new dependency to the current module" />
+    <option name="current" path="ActionManager" hit="Add new dependency to the current module" />
+    <option name="dependency" path="ActionManager" hit="Add new dependency to the current module" />
+    <option name="module" path="ActionManager" hit="Add new dependency to the current module" />
+    <option name="new" path="ActionManager" hit="Add new dependency to the current module" />
+    <option name="the" path="ActionManager" hit="Add new dependency to the current module" />
+    <option name="to" path="ActionManager" hit="Add new dependency to the current module" />
+  </configurable>
+  <configurable id="preferences.packagesearch.PackageSearchGeneralConfigurable" configurable_name="Package Search">
+    <option name="" hit=" Comma-separated list of configurations" />
+    <option name="comma" hit=" Comma-separated list of configurations" />
+    <option name="configurations" hit=" Comma-separated list of configurations" />
+    <option name="list" hit=" Comma-separated list of configurations" />
+    <option name="of" hit=" Comma-separated list of configurations" />
+    <option name="separated" hit=" Comma-separated list of configurations" />
+    <option name="" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="compile" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="import" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="maven" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="provided" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="runtime" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="scopes" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="system" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="test" hit=" Maven scopes: compile, provided, runtime, test, system, import" />
+    <option name="configuration" hit="Default Gradle configuration:" />
+    <option name="default" hit="Default Gradle configuration:" />
+    <option name="gradle" hit="Default Gradle configuration:" />
+    <option name="default" hit="Default Maven scope:" />
+    <option name="maven" hit="Default Maven scope:" />
+    <option name="scope" hit="Default Maven scope:" />
+    <option name="general" hit="General" />
+    <option name="gradle" hit="Gradle" />
+    <option name="configurations" hit="Gradle configurations:" />
+    <option name="gradle" hit="Gradle configurations:" />
+    <option name="maven" hit="Maven" />
+    <option name="package" hit="Package Search" />
+    <option name="search" hit="Package Search" />
+    <option name="defaults" hit="Restore defaults" />
+    <option name="restore" hit="Restore defaults" />
+    <option name="configurations" hit="Update Gradle configurations on usage" />
+    <option name="gradle" hit="Update Gradle configurations on usage" />
+    <option name="on" hit="Update Gradle configurations on usage" />
+    <option name="update" hit="Update Gradle configurations on usage" />
+    <option name="usage" hit="Update Gradle configurations on usage" />
+  </configurable>
+</options>
