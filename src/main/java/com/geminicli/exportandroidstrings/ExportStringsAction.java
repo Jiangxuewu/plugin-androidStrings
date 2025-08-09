@@ -16,6 +16,13 @@ import com.intellij.openapi.roots.ContentEntry;
 import com.intellij.openapi.roots.SourceFolder;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
+import com.intellij.openapi.fileChooser.FileChooserFactory;
+import com.intellij.openapi.fileChooser.FileSaverDescriptor;
+import com.intellij.openapi.fileChooser.FileSaverDialog;
+import com.intellij.openapi.vfs.VfsUtil;
+import com.intellij.ide.util.PropertiesComponent; // Import for persistence
+
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -35,6 +42,9 @@ import java.util.stream.Collectors;
 
 public class ExportStringsAction extends AnAction {
 
+    private static final String LAST_EXPORT_PATH_KEY = "ExportAndroidStrings.lastExportPath";
+    private static final String LAST_MODULE_PATH_KEY = "ExportAndroidStrings.lastModulePath";
+
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
@@ -45,40 +55,78 @@ public class ExportStringsAction extends AnAction {
         // Create the dialog
         JDialog dialog = new JDialog();
         dialog.setTitle("Export Android Strings");
-        dialog.setSize(400, 200);
+        dialog.setSize(500, 250); // Increased size for new fields
         dialog.setModal(true); // Make it modal to block other interactions
         dialog.setLocationRelativeTo(null); // Center the dialog on screen
 
         // Create UI components
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
         dialog.add(panel);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Module Directory selection
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Module Directory:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JTextField moduleDirField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_MODULE_PATH_KEY, ""));
+        panel.add(moduleDirField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        JButton browseModuleButton = new JButton("Browse...");
+        panel.add(browseModuleButton, gbc);
 
         // Export Directory selection
-        JPanel exportDirPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel exportDirLabel = new JLabel("Export Directory:");
-        JTextField exportDirField = new JTextField(20);
-        JButton browseButton = new JButton("Browse...");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Export Directory:"), gbc);
 
-        exportDirPanel.add(exportDirLabel);
-        exportDirPanel.add(exportDirField);
-        exportDirPanel.add(browseButton);
-        panel.add(exportDirPanel, BorderLayout.NORTH);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JTextField exportDirField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_EXPORT_PATH_KEY, ""));
+        panel.add(exportDirField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        JButton browseExportButton = new JButton("Browse...");
+        panel.add(browseExportButton, gbc);
 
         // Export Button
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 3;
+        gbc.anchor = GridBagConstraints.EAST;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton exportButton = new JButton("Export");
         buttonPanel.add(exportButton);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+        panel.add(buttonPanel, gbc);
 
         // Add action listeners
-        browseButton.addActionListener(new ActionListener() {
+        browseModuleButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                int result = fileChooser.showOpenDialog(dialog);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    exportDirField.setText(fileChooser.getSelectedFile().getAbsolutePath());
+                VirtualFile[] files = FileChooserFactory.getInstance().createFileChooser(
+                        FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null)
+                        .choose(project);
+                if (files.length > 0) {
+                    moduleDirField.setText(files[0].getPath());
+                }
+            }
+        });
+
+        browseExportButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                VirtualFile[] files = FileChooserFactory.getInstance().createFileChooser(
+                        FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null)
+                        .choose(project);
+                if (files.length > 0) {
+                    exportDirField.setText(files[0].getPath());
                 }
             }
         });
@@ -86,14 +134,24 @@ public class ExportStringsAction extends AnAction {
         exportButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
+                String modulePath = moduleDirField.getText();
                 String exportPath = exportDirField.getText();
+
+                if (modulePath.isEmpty()) {
+                    Messages.showErrorDialog(project, "Please select a module directory.", "Error");
+                    return;
+                }
                 if (exportPath.isEmpty()) {
                     Messages.showErrorDialog(project, "Please select an export directory.", "Error");
                     return;
                 }
                 
+                // Save paths for next time
+                PropertiesComponent.getInstance().setValue(LAST_MODULE_PATH_KEY, modulePath);
+                PropertiesComponent.getInstance().setValue(LAST_EXPORT_PATH_KEY, exportPath);
+
                 // Call the export logic
-                exportStrings(project, exportPath);
+                exportStrings(project, modulePath, exportPath);
                 dialog.dispose(); // Close the dialog after export
             }
         });
@@ -101,42 +159,48 @@ public class ExportStringsAction extends AnAction {
         dialog.setVisible(true);
     }
 
-    private void exportStrings(@NotNull Project project, @NotNull String exportPath) {
-        Messages.showMessageDialog(project, "Starting string export to: " + exportPath, "Export Strings", Messages.getInformationIcon());
+    private void exportStrings(@NotNull Project project, @NotNull String modulePath, @NotNull String exportPath) {
+        Messages.showMessageDialog(project, "Starting string export from module: " + modulePath + " to: " + exportPath, "Export Strings", Messages.getInformationIcon());
 
         Map<String, Map<String, String>> allStrings = new HashMap<>(); // key: string_name, value: Map<locale, string_value>
         Set<String> locales = new HashSet<>(); // To keep track of all found locales
+        String moduleName = new File(modulePath).getName(); // Get module name from path
 
         try {
-            ModuleManager moduleManager = ModuleManager.getInstance(project);
-            for (Module module : moduleManager.getModules()) {
-                // Find Android 'res' directories
-                for (ContentEntry contentEntry : ModuleRootManager.getInstance(module).getContentEntries()) {
-                    for (SourceFolder sourceFolder : contentEntry.getSourceFolders()) {
-                        VirtualFile sourceRoot = sourceFolder.getFile();
-                        if (sourceRoot != null && sourceRoot.isDirectory()) {
-                            VirtualFile resDir = sourceRoot.findChild("res");
-                            if (resDir != null && resDir.isDirectory()) {
-                                VfsUtilCore.visitChildrenRecursively(resDir, new VirtualFileVisitor<Void>() {
-                                    @Override
-                                    public boolean visitFile(@NotNull VirtualFile file) {
-                                        if (file.isDirectory() && file.getName().startsWith("values")) {
-                                            VirtualFile stringsXml = file.findChild("strings.xml");
-                                            if (stringsXml != null && stringsXml.exists() && !stringsXml.isDirectory()) {
-                                                parseStringsXml(project, stringsXml, allStrings, locales);
-                                            }
-                                        }
-                                        return true;
-                                    }
-                                });
-                            }
-                        }
-                    }
+            VirtualFile moduleRoot = VfsUtil.findFileByIoFile(new File(modulePath), true);
+            if (moduleRoot == null || !moduleRoot.isDirectory()) {
+                Messages.showErrorDialog(project, "Invalid module directory: " + modulePath, "Export Error");
+                return;
+            }
+
+            VirtualFile resDir = moduleRoot.findChild("src"); // Assuming standard Android project structure: module/src/main/res
+            if (resDir != null && resDir.isDirectory()) {
+                resDir = resDir.findChild("main");
+                if (resDir != null && resDir.isDirectory()) {
+                    resDir = resDir.findChild("res");
                 }
             }
 
+            if (resDir == null || !resDir.isDirectory()) {
+                Messages.showErrorDialog(project, "Could not find 'res' directory in module: " + modulePath, "Export Error");
+                return;
+            }
+
+            VfsUtilCore.visitChildrenRecursively(resDir, new VirtualFileVisitor<Void>() {
+                @Override
+                public boolean visitFile(@NotNull VirtualFile file) {
+                    if (file.isDirectory() && file.getName().startsWith("values")) {
+                        VirtualFile stringsXml = file.findChild("strings.xml");
+                        if (stringsXml != null && stringsXml.exists() && !stringsXml.isDirectory()) {
+                            parseStringsXml(project, stringsXml, allStrings, locales);
+                        }
+                    }
+                    return true;
+                }
+            });
+
             // Now, write to CSV
-            writeStringsToCsv(project, exportPath, allStrings, locales);
+            writeStringsToCsv(project, exportPath, moduleName, allStrings, locales);
 
         } catch (Exception e) {
             Messages.showErrorDialog(project, "Error during string export: " + e.getMessage(), "Export Error");
@@ -174,10 +238,10 @@ public class ExportStringsAction extends AnAction {
         return "unknown"; // Should not happen for valid values-XX directories
     }
 
-    private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath,
+    private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName,
                                    @NotNull Map<String, Map<String, String>> allStrings,
                                    @NotNull Set<String> locales) {
-        File outputFile = new File(exportPath, "exported_strings.csv");
+        File outputFile = new File(exportPath, moduleName + "_exported_strings.csv"); // Include module name in filename
         try (FileWriter writer = new FileWriter(outputFile)) {
             // Prepare header
             List<String> sortedLocales = locales.stream()
@@ -188,7 +252,7 @@ public class ExportStringsAction extends AnAction {
                                                 })
                                                 .collect(Collectors.toList());
 
-            writer.append("key");
+            writer.append("Module Name,Key"); // Add Module Name header
             for (String locale : sortedLocales) {
                 writer.append(",").append(locale);
             }
@@ -198,6 +262,7 @@ public class ExportStringsAction extends AnAction {
             for (Map.Entry<String, Map<String, String>> entry : allStrings.entrySet()) {
                 String key = entry.getKey();
                 Map<String, String> localizedStrings = entry.getValue();
+                writer.append(escapeCsv(moduleName)).append(","); // Add module name to row
                 writer.append(escapeCsv(key));
                 for (String locale : sortedLocales) {
                     writer.append(",").append(escapeCsv(localizedStrings.getOrDefault(locale, "")));
@@ -214,7 +279,7 @@ public class ExportStringsAction extends AnAction {
     // Simple CSV escaping for now
     private String escapeCsv(@NotNull String value) {
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\\\"") + "\"";
+            return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
     }
