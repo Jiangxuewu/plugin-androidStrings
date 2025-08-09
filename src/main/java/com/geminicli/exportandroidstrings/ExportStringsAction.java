@@ -121,7 +121,7 @@ public class ExportStringsAction extends AnAction {
 
         apiKeyPanel.add(new JLabel("Google API Key:"), apiKeyGbc);
 
-        JTextField apiKeyField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_API_KEY, ""));
+        JPasswordField apiKeyField = new JPasswordField(PropertiesComponent.getInstance().getValue(LAST_API_KEY, ""));
         apiKeyGbc.gridx = 1;
         apiKeyPanel.add(apiKeyField, apiKeyGbc);
 
@@ -261,7 +261,7 @@ public class ExportStringsAction extends AnAction {
                 }
 
             } else { // Translate is selected
-                String apiKey = apiKeyField.getText();
+                String apiKey = new String(apiKeyField.getPassword());
                 if (apiKey.isEmpty()) {
                     Messages.showErrorDialog(project, "Please enter your Google API Key.", "Error");
                     return;
