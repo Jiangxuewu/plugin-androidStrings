@@ -111,7 +111,7 @@ public class ExportStringsAction extends AnAction {
             ModuleManager moduleManager = ModuleManager.getInstance(project);
             for (Module module : moduleManager.getModules()) {
                 // Find Android 'res' directories
-                ModuleRootManager.getInstance(module).getContentEntries().forEach(contentEntry -> {
+                for (ContentEntry contentEntry : ModuleRootManager.getInstance(module).getContentEntries()) {
                     for (SourceFolder sourceFolder : contentEntry.getSourceFolders()) {
                         VirtualFile sourceRoot = sourceFolder.getFile();
                         if (sourceRoot != null && sourceRoot.isDirectory()) {
@@ -132,7 +132,7 @@ public class ExportStringsAction extends AnAction {
                             }
                         }
                     }
-                });
+                }
             }
 
             // Now, write to CSV
