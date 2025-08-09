@@ -255,6 +255,11 @@ public class ExportStringsAction extends AnAction {
         return null; // Return null for invalid or empty locale parts
     }
 
+    private String escapeCsv(@NotNull String value) {
+        // Always enclose in double quotes and escape internal double quotes
+        return "\"" + value.replace("\"", "\\\"") + "\"";
+    }
+
     private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName,
                                    @NotNull Map<String, Map<String, String>> allStrings,
                                    @NotNull Set<String> locales) {
@@ -295,13 +300,5 @@ public class ExportStringsAction extends AnAction {
         } catch (IOException e) {
             Messages.showErrorDialog(project, "Error writing CSV file: " + e.getMessage(), "Export Error");
         }
-    }
-
-    // Simple CSV escaping for now
-    private String escapeCsv(@NotNull String value) {
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\\\"") + "\"";
-        }
-        return value;
     }
 }
