@@ -1,5 +1,18 @@
 package com.geminicli.exportandroidstrings;
 
+/**
+ * ExportStringsAction 类是 Android Studio 插件的入口点。
+ * 它负责创建和管理插件的用户界面 (GUI) 对话框，
+ * 并根据用户的选择（导出字符串或翻译缺失字符串）将任务委托给不同的服务类。
+ *
+ * 如何使用：
+ * 1. 在 Android Studio 中安装此插件。
+ * 2. 在顶部菜单栏中，点击 'Tools' -> 'Export and Translate Strings...'。
+ * 3. 在弹出的对话框中，选择所需的功能（导出或翻译）。
+ * 4. 根据所选功能提供必要的输入（模块目录、导出目录或 Google API Key）。
+ * 5. 点击 'Run' 按钮执行操作。
+ */
+
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;

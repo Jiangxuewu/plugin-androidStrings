@@ -1,5 +1,15 @@
 package com.geminicli.exportandroidstrings;
 
+/**
+ * StringResourceWriter 类负责将字符串资源写入或更新到 Android 项目的 strings.xml 文件中。
+ * 它能够处理现有字符串的更新和新字符串的添加。
+ *
+ * 如何使用：
+ * 1. 实例化 StringResourceWriter 类，传入当前项目对象。
+ * 2. 调用 updateStringsXml 方法，提供要更新的 strings.xml 文件的 VirtualFile 对象、字符串的键和值。
+ *    例如：writer.updateStringsXml(stringsXmlFile, key, translatedText);
+ */
+
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;

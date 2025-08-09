@@ -1,5 +1,19 @@
 package com.geminicli.exportandroidstrings;
 
+/**
+ * StringResourceParser 类负责解析 Android 项目中的 strings.xml 文件。
+ * 它能够从文件中提取字符串资源，并根据目录名称识别对应的语言环境。
+ *
+ * 如何使用：
+ * 1. 实例化 StringResourceParser 类，传入当前项目对象。
+ * 2. 调用 parseStringsXml 方法来解析用于导出的所有字符串。
+ *    例如：parser.parseStringsXml(stringsXmlFile, allStrings, locales);
+ * 3. 调用 parseStringsXmlForTranslation 方法来解析用于翻译的单个语言环境的字符串。
+ *    例如：parser.parseStringsXmlForTranslation(stringsXmlFile, localeStrings);
+ * 4. 调用 getLocaleFromValuesDir 方法来从 values 目录名称中提取语言环境代码。
+ *    例如：String locale = parser.getLocaleFromValuesDir(dirName);
+ */
+
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;

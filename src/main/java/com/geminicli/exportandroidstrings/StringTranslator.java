@@ -1,5 +1,17 @@
 package com.geminicli.exportandroidstrings;
 
+/**
+ * StringTranslator 类负责处理 Android 字符串资源的机器翻译。
+ * 它使用 Google Cloud Translation API 来翻译缺失的字符串，
+ * 并将翻译结果写回相应的 strings.xml 文件。
+ *
+ * 如何使用：
+ * 1. 实例化 StringTranslator 类，传入当前项目对象、StringResourceParser 实例和 StringResourceWriter 实例。
+ * 2. 调用 translateMissingStrings 方法，提供模块路径和 Google API Key。
+ *    例如：translator.translateMissingStrings(modulePath, apiKey);
+ * 注意：Google Cloud Project ID 目前硬编码在类中，需要根据实际情况进行配置。
+ */
+
 import com.google.cloud.translate.v3.LocationName;
 import com.google.cloud.translate.v3.TranslateTextRequest;
 import com.google.cloud.translate.v3.TranslateTextResponse;

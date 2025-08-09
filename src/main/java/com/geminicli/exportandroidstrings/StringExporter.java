@@ -1,5 +1,15 @@
 package com.geminicli.exportandroidstrings;
 
+/**
+ * StringExporter 类负责将 Android 字符串资源导出到 Excel (.xlsx) 文件。
+ * 它接收解析后的字符串数据和本地化信息，并将其写入结构化的 Excel 文件中。
+ *
+ * 如何使用：
+ * 1. 实例化 StringExporter 类，传入当前项目对象。
+ * 2. 调用 writeStringsToExcel 方法，提供导出路径、模块名称、所有字符串数据和本地化信息。
+ *    例如：exporter.writeStringsToExcel(exportPath, moduleName, allStrings, locales);
+ */
+
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import org.apache.poi.ss.usermodel.Row;
