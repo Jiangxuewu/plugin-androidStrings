@@ -226,13 +226,15 @@ public class ExportStringsAction extends AnAction {
             XmlTag rootTag = xmlFile.getRootTag();
             if (rootTag != null && "resources".equals(rootTag.getName())) {
                 String locale = getLocaleFromValuesDir(stringsXmlFile.getParent().getName());
-                locales.add(locale);
+                if (locale != null) { // Only add valid locales
+                    locales.add(locale);
 
-                for (XmlTag stringTag : rootTag.findSubTags("string")) {
-                    String name = stringTag.getAttributeValue("name");
-                    String value = stringTag.getValue().getText();
-                    if (name != null && value != null) {
-                        allStrings.computeIfAbsent(name, k -> new HashMap<>()).put(locale, value);
+                    for (XmlTag stringTag : rootTag.findSubTags("string")) {
+                        String name = stringTag.getAttributeValue("name");
+                        String value = stringTag.getValue().getUnescapedText(); // CHANGED HERE
+                        if (name != null && value != null) {
+                            allStrings.computeIfAbsent(name, k -> new HashMap<>()).put(locale, value);
+                        }
                     }
                 }
             }
@@ -240,10 +242,16 @@ public class ExportStringsAction extends AnAction {
     }
 
     private String getLocaleFromValuesDir(@NotNull String dirName) {
-        if ("values".equals(dirName)) {
+        String trimmedDirName = dirName.trim();
+        if ("values".equals(trimmedDirName)) {
             return "default"; // Default locale
+        } else if (trimmedDirName.startsWith("values-")) {
+            String localePart = trimmedDirName.substring("values-".length());
+            if (!localePart.isEmpty()) {
+                return trimmedDirName; // Return the full directory name as requested
+            }
         }
-        return dirName.trim(); // Return the full directory name, trimmed
+        return null; // Return null for invalid or empty locale parts
     }
 
     private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName,
