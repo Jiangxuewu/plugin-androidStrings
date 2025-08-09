@@ -40,6 +40,7 @@ public class ExportStringsAction extends AnAction {
     private static final String LAST_EXPORT_PATH_KEY = "ExportAndroidStrings.lastExportPath";
     private static final String LAST_MODULE_PATH_KEY = "ExportAndroidStrings.lastModulePath";
     private static final String LAST_API_KEY = "ExportAndroidStrings.apiKey";
+    private static final String LAST_PROJECT_ID_KEY = "ExportAndroidStrings.projectId";
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -113,34 +114,48 @@ public class ExportStringsAction extends AnAction {
         gbc.gridwidth = 3;
         panel.add(exportPanel, gbc);
 
-        // --- API Key Panel ---
-        JPanel apiKeyPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints apiKeyGbc = new GridBagConstraints();
-        apiKeyGbc.fill = GridBagConstraints.HORIZONTAL;
-        apiKeyGbc.weightx = 1.0;
+        // --- Translation Options Panel (Project ID and API Key) ---
+        JPanel translationOptionsPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints transGbc = new GridBagConstraints();
+        transGbc.insets = new Insets(5, 5, 5, 5);
+        transGbc.fill = GridBagConstraints.HORIZONTAL;
 
-        apiKeyPanel.add(new JLabel("Google API Key:"), apiKeyGbc);
+        // Project ID field
+        transGbc.gridx = 0;
+        transGbc.gridy = 0;
+        translationOptionsPanel.add(new JLabel("Project ID:"), transGbc);
 
+        transGbc.gridx = 1;
+        transGbc.weightx = 1.0;
+        JTextField projectIdField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_PROJECT_ID_KEY, ""));
+        translationOptionsPanel.add(projectIdField, transGbc);
+
+        // API Key field
+        transGbc.gridx = 0;
+        transGbc.gridy = 1;
+        translationOptionsPanel.add(new JLabel("Google API Key:"), transGbc);
+
+        transGbc.gridx = 1;
+        transGbc.weightx = 1.0;
         JPasswordField apiKeyField = new JPasswordField(PropertiesComponent.getInstance().getValue(LAST_API_KEY, ""));
-        apiKeyGbc.gridx = 1;
-        apiKeyPanel.add(apiKeyField, apiKeyGbc);
+        translationOptionsPanel.add(apiKeyField, transGbc);
 
         gbc.gridy++;
         gbc.gridx = 0;
         gbc.gridwidth = 3;
-        panel.add(apiKeyPanel, gbc);
-        apiKeyPanel.setVisible(false); // Initially hidden
+        panel.add(translationOptionsPanel, gbc);
+        translationOptionsPanel.setVisible(false); // Initially hidden
 
         // --- Action Listeners for Radio Buttons ---
         exportRadio.addActionListener(e1 -> {
             exportPanel.setVisible(true);
-            apiKeyPanel.setVisible(false);
+            translationOptionsPanel.setVisible(false);
             dialog.pack();
         });
 
         translateRadio.addActionListener(e1 -> {
             exportPanel.setVisible(false);
-            apiKeyPanel.setVisible(true);
+            translationOptionsPanel.setVisible(true);
             dialog.pack();
         });
 
@@ -261,13 +276,20 @@ public class ExportStringsAction extends AnAction {
                 }
 
             } else { // Translate is selected
+                String projectId = projectIdField.getText();
                 String apiKey = new String(apiKeyField.getPassword());
+
+                if (projectId.isEmpty()) {
+                    Messages.showErrorDialog(project, "Please enter your Google Cloud Project ID.", "Error");
+                    return;
+                }
                 if (apiKey.isEmpty()) {
                     Messages.showErrorDialog(project, "Please enter your Google API Key.", "Error");
                     return;
                 }
+                PropertiesComponent.getInstance().setValue(LAST_PROJECT_ID_KEY, projectId);
                 PropertiesComponent.getInstance().setValue(LAST_API_KEY, apiKey);
-                translator.translateMissingStrings(modulePath, apiKey);
+                translator.translateMissingStrings(modulePath, projectId, apiKey);
             }
             dialog.dispose();
         });

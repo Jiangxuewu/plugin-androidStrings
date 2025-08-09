@@ -50,7 +50,7 @@ public class StringTranslator {
         this.writer = writer;
     }
 
-    public void translateMissingStrings(String modulePath, String apiKey) {
+    public void translateMissingStrings(String modulePath, String projectId, String apiKey) {
         Messages.showInfoMessage("Starting machine translation...", "Translate Strings");
 
         // Note: The 'apiKey' parameter is currently not directly used for authentication with Google Cloud Translation API.
@@ -62,8 +62,7 @@ public class StringTranslator {
         try (TranslationServiceClient client = TranslationServiceClient.create()) {
             // Get the project ID from the API key (this is a simplification, usually project ID is separate)
             // For now, we'll use a placeholder project ID.
-            String projectId = "your-gcp-project-id"; // TODO: This needs to be configured by the user.
-            // In a real plugin, you might want to get this from the API key or a separate configuration.
+            // Use the provided projectId
 
             LocationName parent = LocationName.of(projectId, "global"); // Or specific region like "us-central1"
 
