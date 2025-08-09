@@ -3,6 +3,9 @@ plugins {
     id 'org.jetbrains.intellij' version '1.17.2' // 使用最新稳定版本
 }
 
+sourceCompatibility = 11
+targetCompatibility = 11
+
 group 'com.geminicli.exportandroidstrings'
 version '1.0-SNAPSHOT'
 
