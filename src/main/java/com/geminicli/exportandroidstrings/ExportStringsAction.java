@@ -175,16 +175,24 @@ public class ExportStringsAction extends AnAction {
                 return;
             }
 
-            VirtualFile resDir = moduleRoot.findChild("src"); // Assuming standard Android project structure: module/src/main/res
-            if (resDir != null && resDir.isDirectory()) {
-                resDir = resDir.findChild("main");
-                if (resDir != null && resDir.isDirectory()) {
-                    resDir = resDir.findChild("res");
+            VirtualFile resDir = null;
+            // Try common Android res directory paths
+            VirtualFile[] potentialResDirs = {
+                moduleRoot.findChild("res"), // module/res
+                moduleRoot.findFileByRelativePath("src/main/res"), // module/src/main/res
+                moduleRoot.findFileByRelativePath("src/debug/res"), // module/src/debug/res
+                moduleRoot.findFileByRelativePath("src/release/res") // module/src/release/res
+            };
+
+            for (VirtualFile potentialResDir : potentialResDirs) {
+                if (potentialResDir != null && potentialResDir.isDirectory()) {
+                    resDir = potentialResDir;
+                    break;
                 }
             }
 
             if (resDir == null || !resDir.isDirectory()) {
-                Messages.showErrorDialog(project, "Could not find 'res' directory in module: " + modulePath, "Export Error");
+                Messages.showErrorDialog(project, "Could not find any 'res' directory in module: " + modulePath + ". Tried: " + String.join(", ", java.util.Arrays.stream(potentialResDirs).filter(f -> f != null).map(VirtualFile::getPath).collect(Collectors.toList())), "Export Error");
                 return;
             }
 
