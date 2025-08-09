@@ -213,7 +213,11 @@ public class ExportStringsAction extends AnAction {
             // Debugging: Print allStrings and locales
             System.out.println("---" + " Debugging allStrings ---");
             for (Map.Entry<String, Map<String, String>> entry : allStrings.entrySet()) {
-                System.out.println("Key: " + entry.getKey() + ", Values: " + entry.getValue());
+                System.out.println("Key: " + entry.getKey());
+                Map<String, String> subMap = entry.getValue();
+                for (Map.Entry<String, String> subEntry : subMap.entrySet()) {
+                    System.out.println("   " + subEntry.getKey() + "=" + subEntry.getValue());
+                }
             }
             System.out.println("---" + " Debugging locales ---");
             System.out.println("Locales: " + locales);
