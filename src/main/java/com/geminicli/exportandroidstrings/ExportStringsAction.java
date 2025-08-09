@@ -32,6 +32,8 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime; // Import for timestamp
+import java.time.format.DateTimeFormatter; // Import for timestamp formatting
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -232,16 +234,18 @@ public class ExportStringsAction extends AnAction {
     private String getLocaleFromValuesDir(@NotNull String dirName) {
         if ("values".equals(dirName)) {
             return "default"; // Default locale
-        } else if (dirName.startsWith("values-")) {
-            return dirName.substring("values-".length()).trim();
         }
-        return "unknown"; // Should not happen for valid values-XX directories
+        return dirName.trim(); // Return the full directory name, trimmed
     }
 
     private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName,
                                    @NotNull Map<String, Map<String, String>> allStrings,
                                    @NotNull Set<String> locales) {
-        File outputFile = new File(exportPath, moduleName + "_exported_strings.csv"); // Include module name in filename
+        // Generate timestamp for filename
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("_yyyyMMdd_HHmmss");
+        String timestamp = LocalDateTime.now().format(formatter);
+
+        File outputFile = new File(exportPath, moduleName + "_exported_strings" + timestamp + ".csv"); // Include timestamp in filename
         try (FileWriter writer = new FileWriter(outputFile)) {
             // Prepare header
             List<String> sortedLocales = locales.stream()
@@ -254,7 +258,7 @@ public class ExportStringsAction extends AnAction {
 
             writer.append("Module Name,Key"); // Add Module Name header
             for (String locale : sortedLocales) {
-                writer.append(",").append(locale);
+                writer.append(",").append(locale); // Use full directory name as column header
             }
             writer.append("\n");
 
