@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local configuration
+local.properties
+
+# Compiled output
+*.class
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+.Trashes
+Thumbs.db
