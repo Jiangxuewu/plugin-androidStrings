@@ -17,6 +17,11 @@ dependencies {
     implementation 'org.apache.poi:poi:5.2.5'
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
     implementation 'com.google.cloud:google-cloud-translate:2.2.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation 'org.mockito:mockito-core:5.6.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.6.0'
 }
 
 // Configure Gradle IntelliJ Plugin
@@ -41,5 +46,9 @@ tasks {
 
     publishPlugin {
         token = System.getenv("PUBLISH_TOKEN")
+    }
+
+    test {
+        useJUnitPlatform()
     }
 }

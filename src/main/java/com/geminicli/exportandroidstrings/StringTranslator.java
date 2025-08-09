@@ -34,15 +34,17 @@ public class StringTranslator {
     public void translateMissingStrings(String modulePath, String apiKey) {
         Messages.showInfoMessage("Starting machine translation...", "Translate Strings");
 
-        // Set Google Cloud credentials
-        // This is a simplified approach. In a real plugin, you might want to use a more secure way to handle API keys.
-        // For now, we'll assume the API key is handled by the environment or a more robust mechanism.
-        // System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", "path/to/your/credentials.json"); // Not directly using API key here, but a placeholder for future.
+        // Note: The 'apiKey' parameter is currently not directly used for authentication with Google Cloud Translation API.
+        // TranslationServiceClient.create() by default looks for GOOGLE_APPLICATION_CREDENTIALS environment variable
+        // or application default credentials. For a production plugin, a more robust authentication mechanism
+        // (e.g., OAuth 2.0, or using the API key directly if supported by the client library for simple cases)
+        // would be required.
 
         try (TranslationServiceClient client = TranslationServiceClient.create()) {
             // Get the project ID from the API key (this is a simplification, usually project ID is separate)
             // For now, we'll use a placeholder project ID.
-            String projectId = "your-gcp-project-id"; // TODO: Get actual project ID or make it configurable
+            String projectId = "your-gcp-project-id"; // TODO: This needs to be configured by the user.
+            // In a real plugin, you might want to get this from the API key or a separate configuration.
 
             LocationName parent = LocationName.of(projectId, "global"); // Or specific region like "us-central1"
 
