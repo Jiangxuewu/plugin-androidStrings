@@ -7,9 +7,9 @@ package com.geminicli.exportandroidstrings;
  *
  * 如何使用：
  * 1. 实例化 StringTranslator 类，传入当前项目对象、StringResourceParser 实例和 StringResourceWriter 实例。
- * 2. 调用 translateMissingStrings 方法，提供模块路径和 Google API Key。
- *    例如：translator.translateMissingStrings(modulePath, apiKey);
- * 注意：Google Cloud Project ID 目前硬编码在类中，需要根据实际情况进行配置。
+ * 2. 调用 translateMissingStrings 方法，提供模块路径和 Google Cloud Project ID。
+ *    例如：translator.translateMissingStrings(modulePath, projectId);
+ * 注意：Google Cloud Translation API 认证通过 Application Default Credentials (ADC) 处理。
  */
 
 import com.google.cloud.translate.v3.LocationName;
@@ -50,14 +50,11 @@ public class StringTranslator {
         this.writer = writer;
     }
 
-    public void translateMissingStrings(String modulePath, String projectId, String apiKey) {
+    public void translateMissingStrings(String modulePath, String projectId) {
         Messages.showInfoMessage("Starting machine translation...", "Translate Strings");
 
-        // Note: The 'apiKey' parameter is currently not directly used for authentication with Google Cloud Translation API.
-        // TranslationServiceClient.create() by default looks for GOOGLE_APPLICATION_CREDENTIALS environment variable
-        // or application default credentials. For a production plugin, a more robust authentication mechanism
-        // (e.g., OAuth 2.0, or using the API key directly if supported by the client library for simple cases)
-        // would be required.
+        // Note: Authentication for Google Cloud Translation API is handled via Application Default Credentials (ADC).
+        // Ensure your Google Cloud environment is configured correctly (e.g., by running 'gcloud auth application-default login').
 
         try (TranslationServiceClient client = TranslationServiceClient.create()) {
             // Get the project ID from the API key (this is a simplification, usually project ID is separate)
