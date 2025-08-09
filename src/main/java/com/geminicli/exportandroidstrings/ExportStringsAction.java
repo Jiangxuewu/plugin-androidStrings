@@ -22,6 +22,7 @@ import com.intellij.openapi.fileChooser.FileSaverDescriptor;
 import com.intellij.openapi.fileChooser.FileSaverDialog;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.ide.util.PropertiesComponent; // Import for persistence
+import com.intellij.openapi.util.text.StringUtil; // NEW IMPORT
 
 import org.jetbrains.annotations.NotNull;
 
@@ -231,7 +232,7 @@ public class ExportStringsAction extends AnAction {
 
                     for (XmlTag stringTag : rootTag.findSubTags("string")) {
                         String name = stringTag.getAttributeValue("name");
-                        String value = stringTag.getValue().getUnescapedText(); // CHANGED HERE
+                        String value = StringUtil.unescapeXmlEntities(stringTag.getValue().getText()); // CHANGED HERE
                         if (name != null && value != null) {
                             allStrings.computeIfAbsent(name, k -> new HashMap<>()).put(locale, value);
                         }
