@@ -9,6 +9,13 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
+import com.intellij.openapi.module.ModuleManager;
+import com.intellij.openapi.module.Module;
+import com.intellij.openapi.roots.ModuleRootManager;
+import com.intellij.openapi.roots.ContentEntry;
+import com.intellij.openapi.roots.SourceFolder;
+import com.intellij.openapi.vfs.VfsUtilCore;
+import com.intellij.openapi.vfs.VirtualFileVisitor;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -18,8 +25,13 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class ExportStringsAction extends AnAction {
 
@@ -92,22 +104,118 @@ public class ExportStringsAction extends AnAction {
     private void exportStrings(@NotNull Project project, @NotNull String exportPath) {
         Messages.showMessageDialog(project, "Starting string export to: " + exportPath, "Export Strings", Messages.getInformationIcon());
 
-        // Placeholder for actual string extraction and export logic
-        // In a real scenario, you would:
-        // 1. Find all res/values-XX/strings.xml files in the project.
-        // 2. Parse each strings.xml file to extract string key-value pairs.
-        // 3. Consolidate the strings, handling different languages.
-        // 4. Write the consolidated data to a file (e.g., CSV, Excel) at exportPath.
+        Map<String, Map<String, String>> allStrings = new HashMap<>(); // key: string_name, value: Map<locale, string_value>
+        Set<String> locales = new HashSet<>(); // To keep track of all found locales
 
-        // For now, let's just create a dummy file to show it's working
+        try {
+            ModuleManager moduleManager = ModuleManager.getInstance(project);
+            for (Module module : moduleManager.getModules()) {
+                // Find Android 'res' directories
+                ModuleRootManager.getInstance(module).getContentEntries().forEach(contentEntry -> {
+                    for (SourceFolder sourceFolder : contentEntry.getSourceFolders()) {
+                        VirtualFile sourceRoot = sourceFolder.getFile();
+                        if (sourceRoot != null && sourceRoot.isDirectory()) {
+                            VirtualFile resDir = sourceRoot.findChild("res");
+                            if (resDir != null && resDir.isDirectory()) {
+                                VfsUtilCore.visitChildrenRecursively(resDir, new VirtualFileVisitor<Void>() {
+                                    @Override
+                                    public boolean visitFile(@NotNull VirtualFile file) {
+                                        if (file.isDirectory() && file.getName().startsWith("values")) {
+                                            VirtualFile stringsXml = file.findChild("strings.xml");
+                                            if (stringsXml != null && stringsXml.exists() && !stringsXml.isDirectory()) {
+                                                parseStringsXml(project, stringsXml, allStrings, locales);
+                                            }
+                                        }
+                                        return true;
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Now, write to CSV
+            writeStringsToCsv(project, exportPath, allStrings, locales);
+
+        } catch (Exception e) {
+            Messages.showErrorDialog(project, "Error during string export: " + e.getMessage(), "Export Error");
+        }
+    }
+
+    private void parseStringsXml(@NotNull Project project, @NotNull VirtualFile stringsXmlFile,
+                                  @NotNull Map<String, Map<String, String>> allStrings,
+                                  @NotNull Set<String> locales) {
+        PsiFile psiFile = PsiManager.getInstance(project).findFile(stringsXmlFile);
+        if (psiFile instanceof XmlFile) {
+            XmlFile xmlFile = (XmlFile) psiFile;
+            XmlTag rootTag = xmlFile.getRootTag();
+            if (rootTag != null && "resources".equals(rootTag.getName())) {
+                String locale = getLocaleFromValuesDir(stringsXmlFile.getParent().getName());
+                locales.add(locale);
+
+                for (XmlTag stringTag : rootTag.findSubTags("string")) {
+                    String name = stringTag.getAttributeValue("name");
+                    String value = stringTag.getValue().getText();
+                    if (name != null && value != null) {
+                        allStrings.computeIfAbsent(name, k -> new HashMap<>()).put(locale, value);
+                    }
+                }
+            }
+        }
+    }
+
+    private String getLocaleFromValuesDir(@NotNull String dirName) {
+        if ("values".equals(dirName)) {
+            return "default"; // Default locale
+        } else if (dirName.startsWith("values-")) {
+            return dirName.substring("values-".length());
+        }
+        return "unknown"; // Should not happen for valid values-XX directories
+    }
+
+    private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath,
+                                   @NotNull Map<String, Map<String, String>> allStrings,
+                                   @NotNull Set<String> locales) {
         File outputFile = new File(exportPath, "exported_strings.csv");
         try (FileWriter writer = new FileWriter(outputFile)) {
-            writer.append("key,default_en,es,fr\n");
-            writer.append("app_name,My App,Mi Aplicación,Mon Application\n");
-            writer.append("hello_world,Hello World,Hola Mundo,Bonjour le monde\n");
-            Messages.showMessageDialog(project, "Dummy strings exported to: " + outputFile.getAbsolutePath(), "Export Strings", Messages.getInformationIcon());
+            // Prepare header
+            List<String> sortedLocales = locales.stream()
+                                                .sorted((l1, l2) -> {
+                                                    if ("default".equals(l1)) return -1;
+                                                    if ("default".equals(l2)) return 1;
+                                                    return l1.compareTo(l2);
+                                                })
+                                                .collect(Collectors.toList());
+
+            writer.append("key");
+            for (String locale : sortedLocales) {
+                writer.append(",").append(locale);
+            }
+            writer.append("\n");
+
+            // Write data rows
+            for (Map.Entry<String, Map<String, String>> entry : allStrings.entrySet()) {
+                String key = entry.getKey();
+                Map<String, String> localizedStrings = entry.getValue();
+                writer.append(escapeCsv(key));
+                for (String locale : sortedLocales) {
+                    writer.append(",").append(escapeCsv(localizedStrings.getOrDefault(locale, "")));
+                }
+                writer.append("\n");
+            }
+
+            Messages.showMessageDialog(project, "Strings exported to: " + outputFile.getAbsolutePath(), "Export Strings", Messages.getInformationIcon());
         } catch (IOException e) {
-            Messages.showErrorDialog(project, "Error writing dummy file: " + e.getMessage(), "Export Error");
+            Messages.showErrorDialog(project, "Error writing CSV file: " + e.getMessage(), "Export Error");
         }
+    }
+
+    // Simple CSV escaping for now
+    private String escapeCsv(@NotNull String value) {
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\\\"") + "\"";
+        }
+        return value;
     }
 }
