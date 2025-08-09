@@ -107,7 +107,7 @@ public class ExportStringsAction extends AnAction {
             writer.append("hello_world,Hello World,Hola Mundo,Bonjour le monde\n");
             Messages.showMessageDialog(project, "Dummy strings exported to: " + outputFile.getAbsolutePath(), "Export Strings", Messages.getInformationIcon());
         } catch (IOException e) {
-            Messages.showErrorDialog(project, "Error writing dummy file: " + e.getMessage(), "Export Error", Messages.getErrorIcon());
+            Messages.showErrorDialog(project, "Error writing dummy file: " + e.getMessage(), "Export Error");
         }
     }
 }
