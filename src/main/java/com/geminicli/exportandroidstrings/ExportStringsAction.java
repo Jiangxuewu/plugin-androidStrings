@@ -23,7 +23,11 @@ import com.intellij.openapi.fileChooser.FileSaverDialog;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.ide.util.PropertiesComponent; // Import for persistence
 import com.intellij.openapi.util.text.StringUtil; // NEW IMPORT
-
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -31,7 +35,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime; // Import for timestamp
 import java.time.format.DateTimeFormatter; // Import for timestamp formatting
@@ -223,8 +227,8 @@ public class ExportStringsAction extends AnAction {
             System.out.println("Locales: " + locales);
             System.out.println("--------------------------");
 
-            // Now, write to CSV
-            writeStringsToCsv(project, exportPath, moduleName, allStrings, locales);
+            // Now, write to Excel
+            writeStringsToExcel(project, exportPath, moduleName, allStrings, locales);
 
         } catch (Exception e) {
             Messages.showErrorDialog(project, "Error during string export: " + e.getMessage(), "Export Error");
@@ -268,50 +272,59 @@ public class ExportStringsAction extends AnAction {
         return null; // Return null for invalid or empty locale parts
     }
 
-    private String escapeCsv(@NotNull String value) {
-        // Always enclose in double quotes and escape internal double quotes
-        return "\"" + value.replace("\"", "\\\"") + "\"";
-    }
-
-    private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName, 
-                                   @NotNull Map<String, Map<String, String>> allStrings, 
-                                   @NotNull Set<String> locales) {
+    private void writeStringsToExcel(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName,
+                                     @NotNull Map<String, Map<String, String>> allStrings,
+                                     @NotNull Set<String> locales) {
         // Generate timestamp for filename
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("_yyyyMMdd_HHmmss");
         String timestamp = LocalDateTime.now().format(formatter);
 
-        File outputFile = new File(exportPath, moduleName + "_exported_strings" + timestamp + ".csv"); // Include timestamp in filename
-        try (FileWriter writer = new FileWriter(outputFile)) {
-            // Prepare header
-            List<String> sortedLocales = locales.stream() 
-                                                .sorted((l1, l2) -> {
-                                                    if ("default".equals(l1)) return -1;
-                                                    if ("default".equals(l2)) return 1;
-                                                    return l1.compareTo(l2);
-                                                })
-                                                .collect(Collectors.toList());
+        File outputFile = new File(exportPath, moduleName + "_exported_strings" + timestamp + ".xlsx");
 
-            writer.append("Module Name,Key"); // Add Module Name header
-            for (String locale : sortedLocales) {
-                writer.append(",").append(locale); // Use full directory name as column header
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Strings");
+
+            // Prepare header
+            List<String> sortedLocales = locales.stream()
+                    .sorted((l1, l2) -> {
+                        if ("default".equals(l1)) return -1;
+                        if ("default".equals(l2)) return 1;
+                        return l1.compareTo(l2);
+                    })
+                    .collect(Collectors.toList());
+
+            // Create header row
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Module Name");
+            headerRow.createCell(1).setCellValue("Key");
+            for (int i = 0; i < sortedLocales.size(); i++) {
+                headerRow.createCell(i + 2).setCellValue(sortedLocales.get(i));
             }
-            writer.append("\n");
 
             // Write data rows
+            int rowNum = 1;
             for (Map.Entry<String, Map<String, String>> entry : allStrings.entrySet()) {
                 String key = entry.getKey();
                 Map<String, String> localizedStrings = entry.getValue();
-                writer.append(escapeCsv(moduleName)).append(","); // Add module name to row
-                writer.append(escapeCsv(key));
-                for (String locale : sortedLocales) {
-                    writer.append(",").append(escapeCsv(localizedStrings.getOrDefault(locale, "")));
+
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(moduleName);
+                row.createCell(1).setCellValue(key);
+
+                for (int i = 0; i < sortedLocales.size(); i++) {
+                    String locale = sortedLocales.get(i);
+                    row.createCell(i + 2).setCellValue(localizedStrings.getOrDefault(locale, ""));
                 }
-                writer.append("\n");
+            }
+
+            // Write the output to a file
+            try (FileOutputStream fileOut = new FileOutputStream(outputFile)) {
+                workbook.write(fileOut);
             }
 
             Messages.showMessageDialog(project, "Strings exported to: " + outputFile.getAbsolutePath(), "Export Strings", Messages.getInformationIcon());
         } catch (IOException e) {
-            Messages.showErrorDialog(project, "Error writing CSV file: " + e.getMessage(), "Export Error");
+            Messages.showErrorDialog(project, "Error writing Excel file: " + e.getMessage(), "Export Error");
         }
     }
 }

@@ -13,6 +13,11 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation 'org.apache.poi:poi:5.2.5'
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+}
+
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/gradle-plugins.html
 intellij {
