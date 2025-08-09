@@ -210,6 +210,15 @@ public class ExportStringsAction extends AnAction {
                 }
             });
 
+            // Debugging: Print allStrings and locales
+            System.out.println("---" + " Debugging allStrings ---");
+            for (Map.Entry<String, Map<String, String>> entry : allStrings.entrySet()) {
+                System.out.println("Key: " + entry.getKey() + ", Values: " + entry.getValue());
+            }
+            System.out.println("---" + " Debugging locales ---");
+            System.out.println("Locales: " + locales);
+            System.out.println("--------------------------");
+
             // Now, write to CSV
             writeStringsToCsv(project, exportPath, moduleName, allStrings, locales);
 
@@ -218,8 +227,8 @@ public class ExportStringsAction extends AnAction {
         }
     }
 
-    private void parseStringsXml(@NotNull Project project, @NotNull VirtualFile stringsXmlFile,
-                                  @NotNull Map<String, Map<String, String>> allStrings,
+    private void parseStringsXml(@NotNull Project project, @NotNull VirtualFile stringsXmlFile, 
+                                  @NotNull Map<String, Map<String, String>> allStrings, 
                                   @NotNull Set<String> locales) {
         PsiFile psiFile = PsiManager.getInstance(project).findFile(stringsXmlFile);
         if (psiFile instanceof XmlFile) {
@@ -232,7 +241,7 @@ public class ExportStringsAction extends AnAction {
 
                     for (XmlTag stringTag : rootTag.findSubTags("string")) {
                         String name = stringTag.getAttributeValue("name");
-                        String value = StringUtil.unescapeXmlEntities(stringTag.getValue().getText()); // CHANGED HERE
+                        String value = StringUtil.unescapeXmlEntities(stringTag.getValue().getText());
                         if (name != null && value != null) {
                             allStrings.computeIfAbsent(name, k -> new HashMap<>()).put(locale, value);
                         }
@@ -260,8 +269,8 @@ public class ExportStringsAction extends AnAction {
         return "\"" + value.replace("\"", "\\\"") + "\"";
     }
 
-    private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName,
-                                   @NotNull Map<String, Map<String, String>> allStrings,
+    private void writeStringsToCsv(@NotNull Project project, @NotNull String exportPath, @NotNull String moduleName, 
+                                   @NotNull Map<String, Map<String, String>> allStrings, 
                                    @NotNull Set<String> locales) {
         // Generate timestamp for filename
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("_yyyyMMdd_HHmmss");
@@ -270,7 +279,7 @@ public class ExportStringsAction extends AnAction {
         File outputFile = new File(exportPath, moduleName + "_exported_strings" + timestamp + ".csv"); // Include timestamp in filename
         try (FileWriter writer = new FileWriter(outputFile)) {
             // Prepare header
-            List<String> sortedLocales = locales.stream()
+            List<String> sortedLocales = locales.stream() 
                                                 .sorted((l1, l2) -> {
                                                     if ("default".equals(l1)) return -1;
                                                     if ("default".equals(l2)) return 1;
