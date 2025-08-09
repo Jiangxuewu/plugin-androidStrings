@@ -1,0 +1,24 @@
+<idea-plugin>
+  <idea-version since-build="232.9921" until-build="232.*" />
+  <id>com.geminicli.exportandroidstrings</id>
+  <name>Export Android Strings</name>
+  <version>1.0-SNAPSHOT</version>
+  <vendor email="support@geminicli.com" url="https://www.geminicli.com">Gemini-cli</vendor>
+  <description><![CDATA[This plugin helps to export all string resources from an Android project across all languages.
+        It provides a simple UI to select an export directory and initiate the export process.]]></description>
+  <change-notes><![CDATA[Add change notes here.<br>
+            <em>most HTML tags may be used</em>]]></change-notes>
+  <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
+         on how to target different products -->
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.java</depends>
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+  </extensions>
+  <actions>
+    <action id="ExportAndroidStrings.ExportAction" class="com.geminicli.exportandroidstrings.ExportStringsAction" text="Export Android Strings..." description="Export all string resources from the current Android project." icon="/icons/pluginIcon.svg">
+      <!-- Placeholder for an icon -->
+      <add-to-group group-id="ToolsMenu" anchor="last" />
+    </action>
+  </actions>
+</idea-plugin>

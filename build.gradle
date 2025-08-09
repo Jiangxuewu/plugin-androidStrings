@@ -13,7 +13,7 @@ repositories {
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/gradle-plugins.html
 intellij {
-    version = '2023.2.2' // 目标 IntelliJ IDEA 版本，可以根据需要调整
+    version = '2021.2.4' // 目标 IntelliJ IDEA 版本，可以根据需要调整
     type = 'IC' // 目标产品，IC 代表 IntelliJ IDEA Community Edition
     plugins = ['java'] // 插件依赖，如果需要其他插件，可以在这里添加
 }
@@ -27,7 +27,7 @@ tasks {
     }
 
     runPluginVerifier {
-        ideVersions = ['2023.2.2'] // 验证插件兼容性的 IDE 版本
+        ideVersions = ['2021.2.4'] // 验证插件兼容性的 IDE 版本
     }
 
     publishPlugin {
