@@ -12,10 +12,6 @@ package com.geminicli.exportandroidstrings;
  * 注意：Google Cloud Translation API 认证通过 Application Default Credentials (ADC) 处理。
  */
 
-import com.google.cloud.translate.v3.LocationName;
-import com.google.cloud.translate.v3.TranslateTextRequest;
-import com.google.cloud.translate.v3.TranslateTextResponse;
-import com.google.cloud.translate.v3.TranslationServiceClient;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VfsUtil;
@@ -27,20 +23,30 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.swing.JScrollPane; // NEW IMPORT
-import javax.swing.JTextArea; // NEW IMPORT
-import java.awt.Dimension; // NEW IMPORT
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class StringTranslator {
 
     private final Project project;
     private final StringResourceParser parser;
     private final StringResourceWriter writer;
+    private final OkHttpClient httpClient;
+    private final Gson gson;
 
     public StringTranslator(@NotNull Project project,
                             @NotNull StringResourceParser parser,
@@ -48,20 +54,21 @@ public class StringTranslator {
         this.project = project;
         this.parser = parser;
         this.writer = writer;
+        this.httpClient = new OkHttpClient();
+        this.gson = new Gson();
     }
 
-    public void translateMissingStrings(String modulePath, String projectId) {
+    public void translateMissingStrings(String modulePath, String projectId, String apiKey) {
         Messages.showInfoMessage("Starting machine translation...", "Translate Strings");
 
         // Note: Authentication for Google Cloud Translation API is handled via Application Default Credentials (ADC).
         // Ensure your Google Cloud environment is configured correctly (e.g., by running 'gcloud auth application-default login').
 
-        try (TranslationServiceClient client = TranslationServiceClient.create()) {
-            // Get the project ID from the API key (this is a simplification, usually project ID is separate)
-            // For now, we'll use a placeholder project ID.
-            // Use the provided projectId
-
-            LocationName parent = LocationName.of(projectId, "global"); // Or specific region like "us-central1"
+        try {
+            // Base URL for Google Cloud Translation API (v2 for simpler API key usage)
+            // For v3, the endpoint is different and requires more complex request body.
+            // We will use v2 for direct API key usage as it's simpler.
+            String baseUrl = "https://translation.googleapis.com/language/translate/v2";
 
             VirtualFile moduleRoot = VfsUtil.findFileByIoFile(new File(modulePath), true);
             if (moduleRoot == null || !moduleRoot.isDirectory()) {
@@ -155,19 +162,33 @@ public class StringTranslator {
             if (confirmed) {
                 // Perform translation for each task
                 for (TranslationTask task : translationTasks) {
-                    TranslateTextRequest request =
-                            TranslateTextRequest.newBuilder()
-                                    .setParent(parent.toString())
-                                    .setMimeType("text/plain")
-                                    .setTargetLanguageCode(task.targetLanguageCode)
-                                    .addContents(task.defaultValue)
-                                    .build();
+                    // Build the request body for translation
+                    JsonObject requestBody = new JsonObject();
+                    requestBody.addProperty("q", task.defaultValue);
+                    requestBody.addProperty("target", task.targetLanguageCode);
+                    requestBody.addProperty("format", "text"); // or html
 
-                    TranslateTextResponse response = client.translateText(request);
-                    if (response.getTranslationsCount() > 0) {
-                        String translatedText = response.getTranslations(0).getTranslatedText();
-                        // Add translated string to the map
-                        writer.updateStringsXml(task.targetStringsXmlFile, task.key, translatedText);
+                    RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), requestBody.toString());
+
+                    Request request = new Request.Builder()
+                            .url(baseUrl + "?key=" + apiKey) // Add API key as query parameter
+                            .post(body)
+                            .build();
+
+                    try (Response response = httpClient.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            throw new IOException("Unexpected code " + response + " - " + response.body().string());
+                        }
+
+                        String responseBody = response.body().string();
+                        JsonObject jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
+                        JsonArray translations = jsonResponse.getAsJsonObject("data").getAsJsonArray("translations");
+
+                        if (translations.size() > 0) {
+                            String translatedText = translations.get(0).getAsJsonObject().get("translatedText").getAsString();
+                            // Update the XML file
+                            writer.updateStringsXml(task.targetStringsXmlFile, task.key, translatedText);
+                        }
                     }
                 }
                 Messages.showInfoMessage("Translation process completed.", "Translate Strings");

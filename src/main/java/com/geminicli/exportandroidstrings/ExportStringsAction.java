@@ -39,6 +39,7 @@ public class ExportStringsAction extends AnAction {
 
     private static final String LAST_EXPORT_PATH_KEY = "ExportAndroidStrings.lastExportPath";
     private static final String LAST_MODULE_PATH_KEY = "ExportAndroidStrings.lastModulePath";
+    private static final String LAST_API_KEY = "ExportAndroidStrings.apiKey";
     private static final String LAST_PROJECT_ID_KEY = "ExportAndroidStrings.projectId";
 
     @Override
@@ -128,6 +129,16 @@ public class ExportStringsAction extends AnAction {
         transGbc.weightx = 1.0;
         JTextField projectIdField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_PROJECT_ID_KEY, ""));
         translationOptionsPanel.add(projectIdField, transGbc);
+
+        // API Key field
+        transGbc.gridx = 0;
+        transGbc.gridy = 1;
+        translationOptionsPanel.add(new JLabel("Google API Key:"), transGbc);
+
+        transGbc.gridx = 1;
+        transGbc.weightx = 1.0;
+        JPasswordField apiKeyField = new JPasswordField(PropertiesComponent.getInstance().getValue(LAST_API_KEY, ""));
+        translationOptionsPanel.add(apiKeyField, transGbc);
 
         // gcloud auth instructions
         transGbc.gridx = 0;
@@ -277,13 +288,19 @@ public class ExportStringsAction extends AnAction {
 
             } else { // Translate is selected
                 String projectId = projectIdField.getText();
+                String apiKey = new String(apiKeyField.getPassword());
 
                 if (projectId.isEmpty()) {
                     Messages.showErrorDialog(project, "Please enter your Google Cloud Project ID.", "Error");
                     return;
                 }
+                if (apiKey.isEmpty()) {
+                    Messages.showErrorDialog(project, "Please enter your Google API Key.", "Error");
+                    return;
+                }
                 PropertiesComponent.getInstance().setValue(LAST_PROJECT_ID_KEY, projectId);
-                translator.translateMissingStrings(modulePath, projectId);
+                PropertiesComponent.getInstance().setValue(LAST_API_KEY, apiKey);
+                translator.translateMissingStrings(modulePath, projectId, apiKey);
             }
             dialog.dispose();
         });
