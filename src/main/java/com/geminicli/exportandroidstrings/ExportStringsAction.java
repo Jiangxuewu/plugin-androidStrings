@@ -233,7 +233,7 @@ public class ExportStringsAction extends AnAction {
         if ("values".equals(dirName)) {
             return "default"; // Default locale
         } else if (dirName.startsWith("values-")) {
-            return dirName.substring("values-".length());
+            return dirName.substring("values-".length()).trim();
         }
         return "unknown"; // Should not happen for valid values-XX directories
     }
