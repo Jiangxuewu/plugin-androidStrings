@@ -1,29 +1,21 @@
 package com.geminicli.exportandroidstrings;
 
+import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
+import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.openapi.vfs.VfsUtil;
+import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
-import com.intellij.openapi.module.ModuleManager;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.roots.ModuleRootManager;
-import com.intellij.openapi.roots.ContentEntry;
-import com.intellij.openapi.roots.SourceFolder;
-import com.intellij.openapi.vfs.VfsUtilCore;
-import com.intellij.openapi.vfs.VirtualFileVisitor;
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
-import com.intellij.openapi.fileChooser.FileChooserFactory;
-import com.intellij.openapi.fileChooser.FileSaverDescriptor;
-import com.intellij.openapi.fileChooser.FileSaverDialog;
-import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.ide.util.PropertiesComponent; // Import for persistence
-import com.intellij.openapi.util.text.StringUtil; // NEW IMPORT
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -32,25 +24,23 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.time.LocalDateTime; // Import for timestamp
-import java.time.format.DateTimeFormatter; // Import for timestamp formatting
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 
 public class ExportStringsAction extends AnAction {
 
     private static final String LAST_EXPORT_PATH_KEY = "ExportAndroidStrings.lastExportPath";
     private static final String LAST_MODULE_PATH_KEY = "ExportAndroidStrings.lastModulePath";
+    private static final String LAST_API_KEY = "ExportAndroidStrings.apiKey";
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
@@ -61,10 +51,9 @@ public class ExportStringsAction extends AnAction {
 
         // Create the dialog
         JDialog dialog = new JDialog();
-        dialog.setTitle("Export Android Strings");
-        dialog.setSize(500, 250); // Increased size for new fields
-        dialog.setModal(true); // Make it modal to block other interactions
-        dialog.setLocationRelativeTo(null); // Center the dialog on screen
+        dialog.setTitle("Export and Translate Strings");
+        dialog.setModal(true);
+        dialog.setLocationRelativeTo(null);
 
         // Create UI components
         JPanel panel = new JPanel(new GridBagLayout());
@@ -73,9 +62,24 @@ public class ExportStringsAction extends AnAction {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Module Directory selection
+        // --- Function Selection ---
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 3;
+        JPanel functionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JRadioButton exportRadio = new JRadioButton("Export All Strings", true);
+        JRadioButton translateRadio = new JRadioButton("Translate Missing Strings");
+        ButtonGroup functionGroup = new ButtonGroup();
+        functionGroup.add(exportRadio);
+        functionGroup.add(translateRadio);
+        functionPanel.add(exportRadio);
+        functionPanel.add(translateRadio);
+        panel.add(functionPanel, gbc);
+
+        // --- Module Directory Selection ---
+        gbc.gridy++;
+        gbc.gridwidth = 1;
+        gbc.gridx = 0;
         panel.add(new JLabel("Module Directory:"), gbc);
 
         gbc.gridx = 1;
@@ -88,82 +92,123 @@ public class ExportStringsAction extends AnAction {
         JButton browseModuleButton = new JButton("Browse...");
         panel.add(browseModuleButton, gbc);
 
-        // Export Directory selection
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        panel.add(new JLabel("Export Directory:"), gbc);
+        // --- Export Directory Panel ---
+        JPanel exportPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints exportGbc = new GridBagConstraints();
+        exportGbc.fill = GridBagConstraints.HORIZONTAL;
+        exportGbc.weightx = 1.0;
 
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
+        exportPanel.add(new JLabel("Export Directory:"), exportGbc);
+
         JTextField exportDirField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_EXPORT_PATH_KEY, ""));
-        panel.add(exportDirField, gbc);
+        exportGbc.gridx = 1;
+        exportPanel.add(exportDirField, exportGbc);
 
-        gbc.gridx = 2;
-        gbc.weightx = 0;
         JButton browseExportButton = new JButton("Browse...");
-        panel.add(browseExportButton, gbc);
+        exportGbc.gridx = 2;
+        exportGbc.weightx = 0;
+        exportPanel.add(browseExportButton, exportGbc);
 
-        // Export Button
+        gbc.gridy++;
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridwidth = 3;
+        panel.add(exportPanel, gbc);
+
+        // --- API Key Panel ---
+        JPanel apiKeyPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints apiKeyGbc = new GridBagConstraints();
+        apiKeyGbc.fill = GridBagConstraints.HORIZONTAL;
+        apiKeyGbc.weightx = 1.0;
+
+        apiKeyPanel.add(new JLabel("Google API Key:"), apiKeyGbc);
+
+        JTextField apiKeyField = new JTextField(PropertiesComponent.getInstance().getValue(LAST_API_KEY, ""));
+        apiKeyGbc.gridx = 1;
+        apiKeyPanel.add(apiKeyField, apiKeyGbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 3;
+        panel.add(apiKeyPanel, gbc);
+        apiKeyPanel.setVisible(false); // Initially hidden
+
+        // --- Action Listeners for Radio Buttons ---
+        exportRadio.addActionListener(e1 -> {
+            exportPanel.setVisible(true);
+            apiKeyPanel.setVisible(false);
+            dialog.pack();
+        });
+
+        translateRadio.addActionListener(e1 -> {
+            exportPanel.setVisible(false);
+            apiKeyPanel.setVisible(true);
+            dialog.pack();
+        });
+
+        // --- Run Button ---
+        gbc.gridy++;
+        gbc.gridx = 0;
         gbc.gridwidth = 3;
         gbc.anchor = GridBagConstraints.EAST;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton exportButton = new JButton("Export All Strings");
-        buttonPanel.add(exportButton);
+        JButton runButton = new JButton("Run");
+        buttonPanel.add(runButton);
         panel.add(buttonPanel, gbc);
 
-        // Add action listeners
-        browseModuleButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                VirtualFile[] files = FileChooserFactory.getInstance().createFileChooser(
-                        FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null)
-                        .choose(project);
-                if (files.length > 0) {
-                    moduleDirField.setText(files[0].getPath());
-                }
+        // --- Action Listeners for Browse Buttons ---
+        browseModuleButton.addActionListener(event -> {
+            VirtualFile[] files = FileChooserFactory.getInstance().createFileChooser(
+                    FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null)
+                    .choose(project);
+            if (files.length > 0) {
+                moduleDirField.setText(files[0].getPath());
             }
         });
 
-        browseExportButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                VirtualFile[] files = FileChooserFactory.getInstance().createFileChooser(
-                        FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null)
-                        .choose(project);
-                if (files.length > 0) {
-                    exportDirField.setText(files[0].getPath());
-                }
+        browseExportButton.addActionListener(event -> {
+            VirtualFile[] files = FileChooserFactory.getInstance().createFileChooser(
+                    FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null)
+                    .choose(project);
+            if (files.length > 0) {
+                exportDirField.setText(files[0].getPath());
             }
         });
 
-        exportButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                String modulePath = moduleDirField.getText();
+        // --- Action Listener for Run Button ---
+        runButton.addActionListener(event -> {
+            String modulePath = moduleDirField.getText();
+            if (modulePath.isEmpty()) {
+                Messages.showErrorDialog(project, "Please select a module directory.", "Error");
+                return;
+            }
+            PropertiesComponent.getInstance().setValue(LAST_MODULE_PATH_KEY, modulePath);
+
+            if (exportRadio.isSelected()) {
                 String exportPath = exportDirField.getText();
-
-                if (modulePath.isEmpty()) {
-                    Messages.showErrorDialog(project, "Please select a module directory.", "Error");
-                    return;
-                }
                 if (exportPath.isEmpty()) {
                     Messages.showErrorDialog(project, "Please select an export directory.", "Error");
                     return;
                 }
-                
-                // Save paths for next time
-                PropertiesComponent.getInstance().setValue(LAST_MODULE_PATH_KEY, modulePath);
                 PropertiesComponent.getInstance().setValue(LAST_EXPORT_PATH_KEY, exportPath);
-
-                // Call the export logic
                 exportStrings(project, modulePath, exportPath);
-                dialog.dispose(); // Close the dialog after export
+            } else { // Translate is selected
+                String apiKey = apiKeyField.getText();
+                if (apiKey.isEmpty()) {
+                    Messages.showErrorDialog(project, "Please enter your Google API Key.", "Error");
+                    return;
+                }
+                PropertiesComponent.getInstance().setValue(LAST_API_KEY, apiKey);
+                translateMissingStrings(project, modulePath, apiKey);
             }
+            dialog.dispose();
         });
 
+        dialog.pack();
         dialog.setVisible(true);
+    }
+
+    private void translateMissingStrings(Project project, String modulePath, String apiKey) {
+        Messages.showInfoMessage("Translate feature is not yet implemented.", "Info");
     }
 
     private void exportStrings(@NotNull Project project, @NotNull String modulePath, @NotNull String exportPath) {
@@ -183,10 +228,10 @@ public class ExportStringsAction extends AnAction {
             VirtualFile resDir = null;
             // Try common Android res directory paths
             VirtualFile[] potentialResDirs = {
-                moduleRoot.findChild("res"), // module/res
-                moduleRoot.findFileByRelativePath("src/main/res"), // module/src/main/res
-                moduleRoot.findFileByRelativePath("src/debug/res"), // module/src/debug/res
-                moduleRoot.findFileByRelativePath("src/release/res") // module/src/release/res
+                    moduleRoot.findChild("res"), // module/res
+                    moduleRoot.findFileByRelativePath("src/main/res"), // module/src/main/res
+                    moduleRoot.findFileByRelativePath("src/debug/res"), // module/src/debug/res
+                    moduleRoot.findFileByRelativePath("src/release/res") // module/src/release/res
             };
 
             for (VirtualFile potentialResDir : potentialResDirs) {
@@ -235,9 +280,9 @@ public class ExportStringsAction extends AnAction {
         }
     }
 
-    private void parseStringsXml(@NotNull Project project, @NotNull VirtualFile stringsXmlFile, 
-                                  @NotNull Map<String, Map<String, String>> allStrings, 
-                                  @NotNull Set<String> locales) {
+    private void parseStringsXml(@NotNull Project project, @NotNull VirtualFile stringsXmlFile,
+                                 @NotNull Map<String, Map<String, String>> allStrings,
+                                 @NotNull Set<String> locales) {
         PsiFile psiFile = PsiManager.getInstance(project).findFile(stringsXmlFile);
         if (psiFile instanceof XmlFile) {
             XmlFile xmlFile = (XmlFile) psiFile;
