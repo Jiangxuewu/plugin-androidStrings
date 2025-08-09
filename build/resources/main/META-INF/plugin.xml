@@ -1,5 +1,5 @@
 <idea-plugin>
-  <idea-version since-build="232.9921" until-build="232.*" />
+  <idea-version since-build="212.5712" until-build="212.*" />
   <id>com.geminicli.exportandroidstrings</id>
   <name>Export Android Strings</name>
   <version>1.0-SNAPSHOT</version>
