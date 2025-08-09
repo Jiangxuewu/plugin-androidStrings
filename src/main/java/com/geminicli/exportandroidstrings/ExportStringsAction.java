@@ -279,7 +279,7 @@ public class ExportStringsAction extends AnAction {
     // Simple CSV escaping for now
     private String escapeCsv(@NotNull String value) {
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
+            return "\"" + value.replace("\"", "\\\"") + "\"";
         }
         return value;
     }
