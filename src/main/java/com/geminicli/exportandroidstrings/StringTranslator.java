@@ -24,8 +24,12 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
 import org.jetbrains.annotations.NotNull;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -116,6 +120,8 @@ public class StringTranslator {
                 return;
             }
 
+            List<TranslationTask> translationTasks = new ArrayList<>();
+
             // Iterate through each default string and find missing translations
             for (Map.Entry<String, String> defaultEntry : defaultStrings.entrySet()) {
                 String key = defaultEntry.getKey();
@@ -129,38 +135,68 @@ public class StringTranslator {
 
                     Map<String, String> targetLocaleStrings = localeEntry.getValue();
                     if (!targetLocaleStrings.containsKey(key)) {
-                        // String is missing in this locale, translate it
+                        // String is missing in this locale, add to translation tasks
                         String targetLanguageCode = getLanguageCodeFromLocale(locale); // e.g., "values-fr" -> "fr"
                         if (targetLanguageCode == null) {
                             continue; // Skip invalid locales
                         }
-
-                        // Perform translation
-                        TranslateTextRequest request =
-                                TranslateTextRequest.newBuilder()
-                                        .setParent(parent.toString())
-                                        .setMimeType("text/plain")
-                                        .setTargetLanguageCode(targetLanguageCode)
-                                        .addContents(defaultValue)
-                                        .build();
-
-                        TranslateTextResponse response = client.translateText(request);
-                        if (response.getTranslationsCount() > 0) {
-                            String translatedText = response.getTranslations(0).getTranslatedText();
-                            // Add translated string to the map
-                            targetLocaleStrings.put(key, translatedText);
-                            // Update the XML file
-                            writer.updateStringsXml(stringsXmlFiles.get(locale), key, translatedText);
-                        }
+                        translationTasks.add(new TranslationTask(key, defaultValue, locale, targetLanguageCode, stringsXmlFiles.get(locale)));
                     }
                 }
             }
 
-            Messages.showInfoMessage("Translation process completed.", "Translate Strings");
+            if (translationTasks.isEmpty()) {
+                Messages.showInfoMessage("No missing strings found for translation.", "Translate Strings");
+                return;
+            }
+
+            // Show confirmation dialog
+            boolean confirmed = showTranslationConfirmationDialog(translationTasks);
+
+            if (confirmed) {
+                // Perform translation for each task
+                for (TranslationTask task : translationTasks) {
+                    TranslateTextRequest request = 
+                            TranslateTextRequest.newBuilder()
+                                    .setParent(parent.toString())
+                                    .setMimeType("text/plain")
+                                    .setTargetLanguageCode(task.targetLanguageCode)
+                                    .addContents(task.defaultValue)
+                                    .build();
+
+                    TranslateTextResponse response = client.translateText(request);
+                    if (response.getTranslationsCount() > 0) {
+                        String translatedText = response.getTranslations(0).getTranslatedText();
+                        // Add translated string to the map
+                        writer.updateStringsXml(task.targetStringsXmlFile, task.key, translatedText);
+                    }
+                }
+                Messages.showInfoMessage("Translation process completed.", "Translate Strings");
+            } else {
+                Messages.showInfoMessage("Translation cancelled by user.", "Translate Strings");
+            }
 
         } catch (Exception e) {
             Messages.showErrorDialog(project, "Error during translation: " + e.getMessage(), "Translation Error");
         }
+    }
+
+    private boolean showTranslationConfirmationDialog(List<TranslationTask> tasks) {
+        StringBuilder message = new StringBuilder();
+        message.append("The following strings will be translated:\n\n");
+
+        for (TranslationTask task : tasks) {
+            message.append("Key: ").append(task.key)
+                    .append("\n  Default Value: ").append(task.defaultValue)
+                    .append("\n  Target Language: ").append(task.targetLocale)
+                    .append(" (").append(task.targetLanguageCode).append(")\n\n");
+        }
+
+        message.append("Do you want to proceed with the translation? (Translation may incur costs)");
+
+        // Pass the string message directly to the dialog
+        int result = Messages.showYesNoDialog(project, message.toString(), "Confirm Translation", "Proceed", "Cancel", Messages.getQuestionIcon());
+        return result == Messages.YES;
     }
 
     // Helper method to get language code from locale directory name (e.g., "values-fr" -> "fr")
@@ -181,5 +217,22 @@ public class StringTranslator {
             }
         }
         return null; // Return null for invalid or default locale
+    }
+
+    // Data class to hold translation details for confirmation
+    private static class TranslationTask {
+        String key;
+        String defaultValue;
+        String targetLocale;
+        String targetLanguageCode;
+        VirtualFile targetStringsXmlFile;
+
+        TranslationTask(String key, String defaultValue, String targetLocale, String targetLanguageCode, VirtualFile targetStringsXmlFile) {
+            this.key = key;
+            this.defaultValue = defaultValue;
+            this.targetLocale = targetLocale;
+            this.targetLanguageCode = targetLanguageCode;
+            this.targetStringsXmlFile = targetStringsXmlFile;
+        }
     }
 }
