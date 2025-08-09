@@ -32,6 +32,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.JScrollPane; // NEW IMPORT
+import javax.swing.JTextArea; // NEW IMPORT
+import java.awt.Dimension; // NEW IMPORT
 
 public class StringTranslator {
 
@@ -156,7 +159,7 @@ public class StringTranslator {
             if (confirmed) {
                 // Perform translation for each task
                 for (TranslationTask task : translationTasks) {
-                    TranslateTextRequest request = 
+                    TranslateTextRequest request =
                             TranslateTextRequest.newBuilder()
                                     .setParent(parent.toString())
                                     .setMimeType("text/plain")
@@ -194,8 +197,11 @@ public class StringTranslator {
 
         message.append("Do you want to proceed with the translation? (Translation may incur costs)");
 
-        // Pass the string message directly to the dialog
-        int result = Messages.showYesNoDialog(project, message.toString(), "Confirm Translation", "Proceed", "Cancel", Messages.getQuestionIcon());
+        // Print the full message to the console for debugging
+        System.out.println("Translation Confirmation Message:\n" + message.toString());
+
+        // Pass a short message to the dialog to avoid truncation issues
+        int result = Messages.showYesNoDialog(project, "Confirm translation for " + tasks.size() + " strings?", "Confirm Translation", "Proceed", "Cancel", Messages.getQuestionIcon());
         return result == Messages.YES;
     }
 
