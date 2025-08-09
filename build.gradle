@@ -16,6 +16,7 @@ repositories {
 dependencies {
     implementation 'org.apache.poi:poi:5.2.5'
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
+    implementation 'com.google.cloud:google-cloud-translate:2.2.0'
 }
 
 // Configure Gradle IntelliJ Plugin
