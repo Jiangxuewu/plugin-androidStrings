@@ -15,6 +15,7 @@
 
     <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
          on how to target different products -->
+    <idea-version since-build="212" until-build="233.*"/>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
 
