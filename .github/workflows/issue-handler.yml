@@ -1,0 +1,60 @@
+
+name: Gemini Code Assistant
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  implement-feature:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.body, '''@gemini''')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Java and Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: '''temurin'''
+          java-version: '''17'''
+      
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: "Install Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: '''20'''
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Gemini Agent
+        id: gemini-agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          node .github/scripts/gemini-agent.js
+          # The agent will perform the work. We'''ll generate the commit message here.
+          echo "commit_message=feat: Implement feature from #${{ github.event.issue.number }} by Gemini-cli" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config --global user.name '''gemini-assistant[bot]'''
+          git config --global user.email '''gemini-assistant[bot]@users.noreply.github.com'''
+
+      - name: Commit and Push Changes
+        run: |
+          git add .
+          if ! git diff --staged --quiet; then
+            git commit -m "${{ steps.gemini-agent.outputs.commit_message }}"
+            git push
+          else
+            echo "No changes to commit."
+          fi

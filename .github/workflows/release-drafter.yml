@@ -1,0 +1,39 @@
+
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: '''temurin'''
+          java-version: '''17'''
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Get new version tag
+        id: get_version
+        run: echo "tag=$(date +'''v%Y.%m.%d-%H%M''')" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.tag }}
+          name: "Release ${{ steps.get_version.outputs.tag }}"
+          body: "New release based on the latest changes."
+          files: |
+            build/libs/*.jar

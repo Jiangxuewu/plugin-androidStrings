@@ -1,0 +1,11 @@
+
+{
+  "name": "gemini-agent",
+  "version": "1.0.0",
+  "description": "A script to interact with Gemini API for code generation.",
+  "main": ".github/scripts/gemini-agent.js",
+  "type": "module",
+  "dependencies": {
+    "@google/generative-ai": "^0.14.1"
+  }
+}
